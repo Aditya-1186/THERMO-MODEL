@@ -1,4 +1,4 @@
-"""
+ """
 Interactive Cp vs T Materials Database
 Run locally:   streamlit run app.py
 Deploy free:   push this folder to a GitHub repo, then deploy on
@@ -39,11 +39,18 @@ if search:
            filtered["formula"].str.contains(search, case=False, na=False)
     filtered = filtered[mask]
 
-selected_materials = st.sidebar.multiselect(
-    "Select material(s) to plot",
-    filtered["name"].tolist(),
-    default=filtered["name"].tolist()[:1] if len(filtered) else [],
+st.sidebar.markdown("**Choose a material**")
+material_options = filtered["name"].tolist()
+primary_material = st.sidebar.selectbox(
+    "Material (dropdown)",
+    material_options,
+    index=0 if material_options else None,
 )
+extra_materials = st.sidebar.multiselect(
+    "Add more materials to compare (optional)",
+    [m for m in material_options if m != primary_material],
+)
+selected_materials = ([primary_material] if primary_material else []) + extra_materials
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Temperature range")
@@ -63,6 +70,26 @@ st.title("📊 Interactive Cp vs. Temperature Materials Database")
 st.caption(f"{len(df)} materials across {len(categories)} classes — "
            f"{ (df['data_quality']=='verified').sum() } verified / "
            f"{ (df['data_quality']=='placeholder').sum() } placeholder (see sidebar)")
+
+# --- Explanatory intro: what this is and what formula is used ---------
+with st.container():
+    st.markdown("### What this platform does")
+    st.markdown(
+        "This dashboard lets you explore how the **specific heat capacity at "
+        "constant pressure, Cp**, changes with **temperature, T**, for 200+ "
+        "engineering materials spanning metals & alloys, ceramics, "
+        "semiconductors, polymers, glasses, refractories, and composites."
+    )
+    st.markdown("**Model used** — a generalized Kelley/Shomate-type polynomial:")
+    st.latex(r"C_p(T) = A + B \cdot T + C \cdot T^2 + \dfrac{D}{T^2}")
+    st.markdown(
+        "Each material has its own fitted coefficients (A, B, C, D) and a "
+        "valid temperature range, sourced from standard thermodynamic "
+        "handbooks and databases (see the `source` and `data_quality` "
+        "columns for each material below). Outside a material's valid "
+        "range, the curve is extrapolated and flagged with a warning."
+    )
+    st.markdown("#### Let's compare materials! 👇")
 
 if quality_filter == "Verified (cited) only":
     plot_pool = filtered[filtered["data_quality"] == "verified"]
